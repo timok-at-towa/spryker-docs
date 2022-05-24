@@ -283,12 +283,14 @@ namespace Pyz\Yves\CheckoutPage\Process\Steps;
 use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
 use Spryker\Yves\StepEngine\Dependency\Step\AbstractBaseStep;
 use Spryker\Yves\StepEngine\Dependency\Step\StepWithExternalRedirectInterface;
-use SprykerEco\Client\Easycredit\EasycreditClient;
-use SprykerEco\Shared\Easycredit\EasycreditConfig;
+use SprykerEco\Client\Easycredit\EasycreditClientInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 class EasycreditStep extends AbstractBaseStep implements StepWithExternalRedirectInterface
 {
+    /**
+     * @var string
+     */
     protected const URL_EASYCREDIT_REDIRECT_URL = 'https://ratenkauf.easycredit.de/ratenkauf/content/intern/einstieg.jsf?vorgangskennung=';
 
     /**
@@ -296,12 +298,12 @@ class EasycreditStep extends AbstractBaseStep implements StepWithExternalRedirec
      */
     protected $redirectUrl = '';
 
-   /**
-    * @var \SprykerEco\Client\Easycredit\EasycreditClientInterface
-    */
+    /**
+     * @var \SprykerEco\Client\Easycredit\EasycreditClientInterface
+     */
     protected $easycreditClient;
 
-     /**
+    /**
      * @param string $stepRoute
      * @param string $escapeRoute
      * @param \SprykerEco\Client\Easycredit\EasycreditClientInterface $easycreditClient
@@ -320,26 +322,27 @@ class EasycreditStep extends AbstractBaseStep implements StepWithExternalRedirec
      *
      * @return bool
      */
-    public function requireInput(AbstractTransfer $quoteTransfer)
+    public function requireInput(AbstractTransfer $quoteTransfer): bool
     {
         return false;
     }
 
     /**
      * @param \Symfony\Component\HttpFoundation\Request $request
-     * @param \Spryker\Shared\Kernel\Transfer\AbstractTransfer|\Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
+     * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
      *
      * @return \Spryker\Shared\Kernel\Transfer\AbstractTransfer
      */
-    public function execute(Request $request, AbstractTransfer $quoteTransfer)
+    public function execute(Request $request, AbstractTransfer $quoteTransfer): AbstractTransfer
     {
         $payment = $quoteTransfer->getPayment();
-         if ($payment->getPaymentSelection() === 'easycredit') {
+        if ($payment->getPaymentSelection() === 'easycredit') {
             $responseTransfer = $this->easycreditClient->sendInitializePaymentRequest($quoteTransfer);
             $this->redirectUrl = static::URL_EASYCREDIT_REDIRECT_URL . $responseTransfer->getPaymentIdentifier();
             $quoteTransfer->getPayment()->getEasycredit()->setVorgangskennung($responseTransfer->getPaymentIdentifier());
         }
-         return $quoteTransfer;
+
+        return $quoteTransfer;
     }
 
     /**
@@ -347,7 +350,7 @@ class EasycreditStep extends AbstractBaseStep implements StepWithExternalRedirec
      *
      * @return bool
      */
-    public function postCondition(AbstractTransfer $quoteTransfer)
+    public function postCondition(AbstractTransfer $quoteTransfer): bool
     {
         return true;
     }
@@ -357,7 +360,7 @@ class EasycreditStep extends AbstractBaseStep implements StepWithExternalRedirec
      *
      * @return string
      */
-    public function getExternalRedirectUrl()
+    public function getExternalRedirectUrl(): string
     {
         return $this->redirectUrl;
     }
@@ -369,10 +372,11 @@ class EasycreditStep extends AbstractBaseStep implements StepWithExternalRedirec
      *
      * @return bool
      */
-    public function preCondition(AbstractTransfer $quoteTransfer)
+    public function preCondition(AbstractTransfer $quoteTransfer): bool
     {
         return true;
     }
+}
 
 ```
 
@@ -387,43 +391,58 @@ use Generated\Shared\Transfer\EasycreditLegalTextTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
 use Spryker\Yves\StepEngine\Dependency\Plugin\Handler\StepHandlerPluginCollection;
-use SprykerEco\Client\Easycredit\EasycreditClient;
-use SprykerEco\Shared\Easycredit\EasycreditConfig;
+use SprykerEco\Client\Easycredit\EasycreditClientInterface;
 use SprykerShop\Yves\CheckoutPage\Dependency\Client\CheckoutPageToCalculationClientInterface;
+use SprykerShop\Yves\CheckoutPage\GiftCard\GiftCardItemsCheckerInterface;
+use SprykerShop\Yves\CheckoutPage\Process\Steps\PostConditionCheckerInterface;
 use SprykerShop\Yves\CheckoutPage\Process\Steps\ShipmentStep as SprykerShipmentStep;
 use Symfony\Component\HttpFoundation\Request;
 
 class ShipmentStep extends SprykerShipmentStep
 {
     /**
-     * @var EasycreditClientInterface
+     * @var \SprykerEco\Client\Easycredit\EasycreditClientInterface
      */
     protected $easycreditClient;
 
+    /**
+     * @param \SprykerShop\Yves\CheckoutPage\Dependency\Client\CheckoutPageToCalculationClientInterface $calculationClient
+     * @param \Spryker\Yves\StepEngine\Dependency\Plugin\Handler\StepHandlerPluginCollection $shipmentPlugins
+     * @param \SprykerShop\Yves\CheckoutPage\Process\Steps\PostConditionCheckerInterface $postConditionChecker
+     * @param \SprykerShop\Yves\CheckoutPage\GiftCard\GiftCardItemsCheckerInterface $giftCardItemsChecker
+     * @param string $stepRoute
+     * @param string $escapeRoute
+     * @param \SprykerEco\Client\Easycredit\EasycreditClientInterface $client
+     * @param array<mixed> $checkoutShipmentStepEnterPreCheckPlugins
+     */
     public function __construct(
         CheckoutPageToCalculationClientInterface $calculationClient,
         StepHandlerPluginCollection $shipmentPlugins,
+        PostConditionCheckerInterface $postConditionChecker,
+        GiftCardItemsCheckerInterface $giftCardItemsChecker,
         string $stepRoute,
         string $escapeRoute,
-        EasycreditClientInterface $client
+        EasycreditClientInterface $client,
+        array $checkoutShipmentStepEnterPreCheckPlugins
     ) {
-        parent::__construct($calculationClient, $shipmentPlugins, $stepRoute, $escapeRoute);
+        parent::__construct($calculationClient, $shipmentPlugins, $postConditionChecker, $giftCardItemsChecker, $stepRoute, $escapeRoute, $checkoutShipmentStepEnterPreCheckPlugins);
         $this->easycreditClient = $client;
     }
 
     /**
-     * @param Request $request
-     * @param QuoteTransfer $quoteTransfer
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
+     *
      * @return \Generated\Shared\Transfer\QuoteTransfer
      */
-    public function execute(Request $request, AbstractTransfer $quoteTransfer)
+    public function execute(Request $request, AbstractTransfer $quoteTransfer): QuoteTransfer
     {
         $easycreditLegalTextTransfer = new EasycreditLegalTextTransfer();
         $easycreditLegalTextTransfer->setText($this->easycreditClient->sendApprovalTextRequest()->getText());
         $quoteTransfer->setEasycreditLegalText($easycreditLegalTextTransfer);
+
         return parent::execute($request, $quoteTransfer);
     }
-}
 ```
 
 **SummaryStep.php**
