@@ -168,7 +168,7 @@ class CheckoutPageFactory extends SprykerCheckoutPageFactory
 }
 ```
 
-2. Create the directories 'Pyz\Yves\CheckoutPage\Process' and implement `StepFactory` as shown in this example:
+2. Create the directories `Pyz\Yves\CheckoutPage\Process` if not present and implement `StepFactory` as shown in this example:
 
 **StepFactory**
 
