@@ -450,25 +450,27 @@ class ShipmentStep extends SprykerShipmentStep
 ```php
 <?php
 
-namespace Pyz\Yves\CheckoutPage\Process\Steps;
+namespace Pyz\Yves\CheckoutPage\Process;
 
+use Generated\Shared\Transfer\QuoteTransfer;
 use Spryker\Shared\Kernel\Transfer\AbstractTransfer;
-use SprykerEco\Client\Easycredit\EasycreditClient;
-use SprykerShop\Yves\CheckoutPage\Dependency\Client\CheckoutPageToProductBundleClientInterface;
 use SprykerShop\Yves\CheckoutPage\Process\Steps\SummaryStep as SprykerSummaryStep;
-use Symfony\Component\HttpFoundation\Request;
 
 class SummaryStep extends SprykerSummaryStep
 {
-     /**
+    /**
      * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
      *
-     * @return array
+     * @return array<array-key, mixed>
      */
-    public function getTemplateVariables(AbstractTransfer $quoteTransfer)
+    public function getTemplateVariables(AbstractTransfer $quoteTransfer): array
     {
+        $shipmentGroups = $this->shipmentService->groupItemsByShipment($quoteTransfer->getItems());
+        $isPlaceableOrderResponseTransfer = $this->checkoutClient->isPlaceableOrder($quoteTransfer);
+        $isPlaceableOrder = $quoteTransfer->getIsOrderPlacedSuccessfully() !== null || $isPlaceableOrderResponseTransfer->getIsSuccess();
+
         $easycreditData = [];
-             if ($quoteTransfer->getPayment() && $quoteTransfer->getPayment()->getEasycredit()) {
+        if ($quoteTransfer->getPayment() && $quoteTransfer->getPayment()->getEasycredit()) {
             $easycreditData = [
                 'interest' => $quoteTransfer->getPayment()->getEasycredit()->getAnfallendeZinsen(),
                 'url' => $quoteTransfer->getPayment()->getEasycredit()->getUrlVorvertraglicheInformationen(),
@@ -480,8 +482,14 @@ class SummaryStep extends SprykerSummaryStep
             'quoteTransfer' => $quoteTransfer,
             'cartItems' => $this->productBundleClient->getGroupedBundleItems(
                 $quoteTransfer->getItems(),
-                $quoteTransfer->getBundleItems()
+                $quoteTransfer->getBundleItems(),
             ),
+            'shipmentGroups' => $this->expandShipmentGroupsWithCartItems($shipmentGroups, $quoteTransfer),
+            'totalCosts' => $this->getShipmentTotalCosts($shipmentGroups, $quoteTransfer),
+            'isPlaceableOrder' => $isPlaceableOrder,
+            'isPlaceableOrderErrors' => $isPlaceableOrderResponseTransfer->getErrors(),
+            'shipmentExpenses' => $this->getShipmentExpenses($quoteTransfer),
+            'acceptTermsFieldName' => QuoteTransfer::ACCEPT_TERMS_AND_CONDITIONS,
             'easycredit' => $easycreditData,
         ];
     }
