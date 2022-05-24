@@ -89,3 +89,4 @@ $config[EasycreditConstants::SUCCESS_URL] = $config[ApplicationConstants::BASE_U
 $config[EasycreditConstants::CANCELLED_URL] = $config[ApplicationConstants::BASE_URL_YVES] . '/checkout/payment';
 $config[EasycreditConstants::DENIED_URL] = $config[ApplicationConstants::BASE_URL_YVES] . '/checkout/payment';
 ```
+*Hint: Consider methods to not commiting sensitive information to your repository.*
