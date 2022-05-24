@@ -168,7 +168,7 @@ class CheckoutPageFactory extends SprykerCheckoutPageFactory
 }
 ```
 
-2. Implement `StepFactory` as shown in this example:
+2. Create the directories 'Pyz\Yves\CheckoutPage\Process' and implement `StepFactory` as shown in this example:
 
 **StepFactory**
 
@@ -178,20 +178,23 @@ class CheckoutPageFactory extends SprykerCheckoutPageFactory
 namespace Pyz\Yves\CheckoutPage\Process;
 
 use Pyz\Yves\CheckoutPage\CheckoutPageDependencyProvider;
-use Pyz\Yves\CheckoutPage\Plugin\Provider\CheckoutPageControllerProvider;
+use Pyz\Yves\CheckoutPage\Plugin\Router\CheckoutPageRouteProviderPlugin;
 use Pyz\Yves\CheckoutPage\Process\Steps\EasycreditStep;
 use Pyz\Yves\CheckoutPage\Process\Steps\ShipmentStep;
-use Pyz\Yves\CheckoutPage\Process\Steps\SummaryStep;
-use Spryker\Client\Messenger\MessengerClientInterface;
 use Spryker\Yves\StepEngine\Dependency\Step\StepInterface;
-use Spryker\Yves\StepEngine\Process\StepCollection;
-use Spryker\Zed\Messenger\Business\MessengerFacadeInterface;
-use SprykerEco\Client\Easycredit\EasycreditClient;
+use SprykerEco\Client\Easycredit\EasycreditClientInterface;
+use SprykerShop\Yves\CheckoutPage\Plugin\Router\CheckoutPageRouteProviderPlugin as CheckoutPageRouteProviderPluginAlias;
 use SprykerShop\Yves\CheckoutPage\Process\StepFactory as SprykerStepFactory;
-use SprykerShop\Yves\HomePage\Plugin\Provider\HomePageControllerProvider;
 
 class StepFactory extends SprykerStepFactory
 {
+    /**
+     * @uses \SprykerShop\Yves\HomePage\Plugin\Router\HomePageRouteProviderPlugin::ROUTE_HOME
+     *
+     * @var string
+     */
+    protected const ROUTE_HOME = 'home';
+    
     /**
      * @return StepInterface
      */
@@ -213,9 +216,9 @@ class StepFactory extends SprykerStepFactory
             $this->getProductBundleClient(),
             $this->getShipmentService(),
             $this->getConfig(),
-            SprykerShopCheckoutPageControllerProvider::CHECKOUT_SUMMARY,
-            HomePageControllerProvider::ROUTE_HOME,
-            $this->getCheckoutClient()
+            CheckoutPageRouteProviderPluginAlias::ROUTE_NAME_CHECKOUT_SUMMARY,
+            static::ROUTE_HOME,
+            $this->getCheckoutClient(),
         );
 
     }
@@ -230,46 +233,35 @@ class StepFactory extends SprykerStepFactory
             $this->getShipmentPlugins(),
             $this->createShipmentStepPostConditionChecker(),
             $this->createGiftCardItemsChecker(),
-            SprykerShopCheckoutPageControllerProvider::CHECKOUT_SHIPMENT,
-            HomePageControllerProvider::ROUTE_HOME,
-            $this->getEasycreditClient()
+            CheckoutPageRouteProviderPluginAlias::ROUTE_NAME_CHECKOUT_SHIPMENT,
+            static::ROUTE_HOME,
+            $this->getEasycreditClient(),
+            $this->getCheckoutShipmentStepEnterPreCheckPlugins(),
         );
 
     }
 
     /**
-     * @return \Spryker\Yves\StepEngine\Process\StepCollectionInterface
+     * @return array<\Spryker\Yves\StepEngine\Dependency\Step\StepInterface>
      */
-    public function createStepCollection(): StepCollectionInterface
+    public function getSteps(): array
     {
-        $stepCollection = new StepCollection(
-            $this->getUrlGenerator(),            {% raw %}{%{% endraw %} if data.easycredit {% raw %}%}{% endraw %}
-                {% raw %}{%{% endraw %} include molecule('easycredit-summary', 'Easycredit') with {
-                    data: {
-                        interest: data.easycredit.interest,
-                        url: data.easycredit.url,
-                        text: data.easycredit.text
-                    }
-                } only {% raw %}%}{% endraw %}
-            {% raw %}{%{% endraw %} endif {% raw %}%}{% endraw %}
-
-            CheckoutPageControllerProvider::CHECKOUT_ERROR
-        );
-         $stepCollection
-            ->addStep($this->createEntryStep())
-            ->addStep($this->createCustomerStep())
-            ->addStep($this->createAddressStep())
-            ->addStep($this->createShipmentStep())
-            ->addStep($this->createPaymentStep())
-            ->addStep($this->createEasycreditStep())
-            ->addStep($this->createSummaryStep())
-            ->addStep($this->createPlaceOrderStep())
-            ->addStep($this->createSuccessStep());
-         return $stepCollection;
+        return [
+            $this->createEntryStep(),
+            $this->createCustomerStep(),
+            $this->createAddressStep(),
+            $this->createShipmentStep(),
+            $this->createPaymentStep(),
+            $this->createEasycreditStep(),
+            $this->createSummaryStep(),
+            $this->createPlaceOrderStep(),
+            $this->createSuccessStep(),
+            $this->createErrorStep(),
+        ];
     }
-
+    
     /**
-     * @return EasycreditClientInterface
+     * @return \SprykerEco\Client\Easycredit\EasycreditClientInterface
      */
     protected function getEasycreditClient(): EasycreditClientInterface
     {
