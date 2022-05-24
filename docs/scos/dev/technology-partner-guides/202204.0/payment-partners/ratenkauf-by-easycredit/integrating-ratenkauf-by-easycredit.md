@@ -33,7 +33,11 @@ To show the Easycredit payment method on the payment step, define `SubFormPlugin
 CheckoutPageDependencyProvider.php
 
 ```php
-public const CLIENT_EASYCREDIT = 'CLIENT_EASYCREDIT';
+
+	/**
+	* @var string
+	*/
+	public const CLIENT_EASYCREDIT = 'CLIENT_EASYCREDIT';
 
 ...
     /**
