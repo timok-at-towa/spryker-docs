@@ -106,8 +106,19 @@ To use commands and conditions for events in OMS,  define them.
 
 ```php
 ...
-$container->extend(self::CONDITION_PLUGINS, function (ConditionCollectionInterface $conditionCollection) {
+
+    /**
+     * @param \Spryker\Zed\Kernel\Container $container
+     *
+     * @return \Spryker\Zed\Kernel\Container
+     */
+    protected function extendConditionPlugins(Container $container): Container
+    {
+    
+    ...
+    $container->extend(self::CONDITION_PLUGINS, function (ConditionCollectionInterface $conditionCollection) {
     $conditionCollection->add(new IsOrderConfirmedPlugin(), 'Easycredit/IsOrderConfirmed');
+    
     return $conditionCollection;
 });
 ...
