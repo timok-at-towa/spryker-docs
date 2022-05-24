@@ -57,11 +57,10 @@ CheckoutPageDependencyProvider.php
      *
      * @return \Spryker\Yves\Kernel\Container
      */
-    protected function addSubFormPluginCollection(Container $container): Container
+    protected function extendSubFormPluginCollection(Container $container): Container
     {
-        $container[static::PAYMENT_SUB_FORMS] = function () {
-            $subFormPluginCollection = new SubFormPluginCollection();
-            $subFormPluginCollection->add(new EasycreditSubFormPlugin());
+        $container->extend(static::PAYMENT_SUB_FORMS, function (SubFormPluginCollection $paymentSubFormPluginCollection) {
+            $paymentSubFormPluginCollection->add(new EasycreditSubFormPlugin());
 
             return $subFormPluginCollection;
         };
@@ -73,12 +72,12 @@ CheckoutPageDependencyProvider.php
      *
      * @return \Spryker\Yves\Kernel\Container
      */
-    protected function addPaymentMethodHandlerPluginCollection(Container $container): Container
+    protected function extendPaymentMethodHandler(Container $container): Container
     {
-        $container[self::PAYMENT_METHOD_HANDLER] = function () {
-            $stepHandlerPluginCollection = new StepHandlerPluginCollection();
-            $stepHandlerPluginCollection->add(new EasycreditHandlerPlugin(), PaymentTransfer::EASYCREDIT);
-             return $stepHandlerPluginCollection;
+        $container->extend(static::PAYMENT_METHOD_HANDLER, function (StepHandlerPluginCollection $paymentMethodHandler) {
+            $paymentMethodHandler->add(new EasycreditHandlerPlugin(), PaymentTransfer::EASYCREDIT);
+	    
+            return $paymentMethodHandler;
         };
 
         return $container;
@@ -91,9 +90,9 @@ CheckoutPageDependencyProvider.php
      */
     protected function addEasycreditClient(Container $container): Container
     {
-        $container[static::CLIENT_EASYCREDIT] = function (Container $container) {
+        $container->set(static::CLIENT_EASYCREDIT, function (Container $container) {
             return $container->getLocator()->easycredit()->client();
-        };
+        });
 
         return $container;
     }
