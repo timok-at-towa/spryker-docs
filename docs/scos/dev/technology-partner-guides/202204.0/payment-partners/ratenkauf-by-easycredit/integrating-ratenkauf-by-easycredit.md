@@ -502,24 +502,24 @@ class SummaryStep extends SprykerSummaryStep
 
 ```php
 <?php
-
 namespace Pyz\Yves\CheckoutPage\Controller;
 
 use SprykerShop\Yves\CheckoutPage\Controller\CheckoutController as SprykerCheckoutController;
 use Symfony\Component\HttpFoundation\Request;
 
-class CheckoutController extends SprykerCheckoutController
+class CheckoutPageController extends SprykerCheckoutController
 {
-	/**
-	 * @param \Symfony\Component\HttpFoundation\Request $request
-	 *
-	 * @return array|\Symfony\Component\HttpFoundation\RedirectResponse
-	 */
-	public function easyCreditAction(Request $request)
-	{
-		return $this->createStepProcess()->process($request);
-	}
+    /**
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     *
+     * @return \Symfony\Component\HttpFoundation\RedirectResponse|array<mixed>
+     */
+    public function easyCreditAction(Request $request)
+    {
+        return $this->createStepProcess()->process($request);
+    }
 }
+
 ```
 
 5. After creating a new action in the checkout controller, define a new route in `CheckoutPageRouteProviderPlugin`.
@@ -531,12 +531,19 @@ class CheckoutController extends SprykerCheckoutController
 
 namespace Pyz\Yves\CheckoutPage\Plugin\Router;
 
-use SprykerShop\Yves\CheckoutPage\Plugin\Router\CheckoutPageRouteProviderPlugin as SprykerCheckoutPageRouteProviderPlugin;
 use Spryker\Yves\Router\Route\RouteCollection;
+use SprykerShop\Yves\CheckoutPage\Plugin\Router\CheckoutPageRouteProviderPlugin as SprykerCheckoutPageRouteProviderPlugin;
 
 class CheckoutPageRouteProviderPlugin extends SprykerCheckoutPageRouteProviderPlugin
 {
+    /**
+     * @var string
+     */
     public const CHECKOUT_EASY_CREDIT = 'easy-credit';
+
+    /**
+     * @var string
+     */
     protected const ROUTE_CART = 'cart';
 
     /**
@@ -560,17 +567,18 @@ class CheckoutPageRouteProviderPlugin extends SprykerCheckoutPageRouteProviderPl
 
     /**
      * @param \Spryker\Yves\Router\Route\RouteCollection $routeCollection
+     *
+     * @return \Spryker\Yves\Router\Route\RouteCollection
      */
-    public function addEasycreditStepRoute($routeCollection)
+    public function addEasycreditStepRoute(RouteCollection $routeCollection): RouteCollection
     {
-        $route = $this->buildRoute('/checkout/easycredit', 'CheckoutPage', 'Checkout', 'easyCredit');
+        $route = $this->buildRoute('/checkout/easycredit', 'CheckoutPage', 'CheckoutPage', 'easyCredit');
         $route = $route->setMethods(['GET', 'POST']);
         $routeCollection->add(static::CHECKOUT_EASY_CREDIT, $route);
 
         return $routeCollection;
     }
 }
-
 ```
 
 6. Also, the Easycredit bundle has its own `YvesController` for handling a success response from Easycredit, so you have to define a controller in `RouterDependencyProvider`.
